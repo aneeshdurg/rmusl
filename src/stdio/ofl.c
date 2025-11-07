@@ -16,3 +16,7 @@ void __ofl_unlock()
 {
 	UNLOCK(ofl_lock);
 }
+
+void __ofl_init() {
+  ofl_head = NULL;
+}

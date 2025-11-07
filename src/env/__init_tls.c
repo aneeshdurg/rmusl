@@ -4,6 +4,7 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <stddef.h>
+#include <unistd.h>
 #include "pthread_impl.h"
 #include "libc.h"
 #include "atomic.h"
@@ -63,11 +64,114 @@ void *__copy_tls(unsigned char *mem)
 
 	for (i=1, p=libc.tls_head; p; i++, p=p->next) {
 		dtv[i] = (uintptr_t)(mem - p->offset) + DTP_OFFSET;
+
+  {
+    unsigned long v = (unsigned long)(p->offset);
+    write(1,  "o=0x", 4);
+    while (v != 0) {
+      char c = v % 16;
+      if (c <= 9) {
+        c = '0' + c;
+      } else {
+        c = 'a' + c - 10;
+      }
+      write(1, &c, 1);
+      v /= 16;
+    }
+    char c = '\n';
+    write(1, &c, 1);
+    }
+
+{
+    unsigned long v = (unsigned long)(p->size);
+    write(1,  "z=0x", 4);
+    while (v != 0) {
+      char c = v % 16;
+      if (c <= 9) {
+        c = '0' + c;
+      } else {
+        c = 'a' + c - 10;
+      }
+      write(1, &c, 1);
+      v /= 16;
+    }
+    char c = '\n';
+    write(1, &c, 1);
+    }
+
 		memcpy(mem - p->offset, p->image, p->len);
 	}
 #endif
+{
+    unsigned long v = (unsigned long)(dtv);
+    write(1,  "d=0x", 4);
+    while (v != 0) {
+      char c = v % 16;
+      if (c <= 9) {
+        c = '0' + c;
+      } else {
+        c = 'a' + c - 10;
+      }
+      write(1, &c, 1);
+      v /= 16;
+    }
+    char c = '\n';
+    write(1, &c, 1);
+    }
+{
+    unsigned long v = (unsigned long)(&libc);
+    write(1,  "l=0x", 4);
+    while (v != 0) {
+      char c = v % 16;
+      if (c <= 9) {
+        c = '0' + c;
+      } else {
+        c = 'a' + c - 10;
+      }
+      write(1, &c, 1);
+      v /= 16;
+    }
+    char c = '\n';
+    write(1, &c, 1);
+    }
+{
+    unsigned long v = (unsigned long)(td);
+    write(1,  "t=0x", 4);
+    while (v != 0) {
+      char c = v % 16;
+      if (c <= 9) {
+        c = '0' + c;
+      } else {
+        c = 'a' + c - 10;
+      }
+      write(1, &c, 1);
+      v /= 16;
+    }
+    char c = '\n';
+    write(1, &c, 1);
+    }
+{
+    unsigned long v = (unsigned long)(&td->dtv);
+    write(1,  "d=0x", 4);
+    while (v != 0) {
+      char c = v % 16;
+      if (c <= 9) {
+        c = '0' + c;
+      } else {
+        c = 'a' + c - 10;
+      }
+      write(1, &c, 1);
+      v /= 16;
+    }
+    char c = '\n';
+    write(1, &c, 1);
+    }
+
+write(1, "!0\n", 3);
 	dtv[0] = libc.tls_cnt;
+write(1, "!1\n", 3);
 	td->dtv = dtv;
+write(1, "!2\n", 3);
 	return td;
 }
 
@@ -85,7 +189,7 @@ static void static_init_tls(size_t *aux)
 	size_t n;
 	Phdr *phdr, *tls_phdr=0;
 	size_t base = 0;
-	void *mem;
+	unsigned char *mem;
 
 	for (p=(void *)aux[AT_PHDR],n=aux[AT_PHNUM]; n; n--,p+=aux[AT_PHENT]) {
 		phdr = (void *)p;
@@ -130,7 +234,12 @@ static void static_init_tls(size_t *aux)
 		+ main_tls.size + main_tls.align
 		+ MIN_TLS_ALIGN-1 & -MIN_TLS_ALIGN;
 
-	if (libc.tls_size > sizeof builtin_tls) {
+  libc.tls_size=4096;
+  libc.tls_head=0x00;
+  libc.tls_cnt=0x00;
+  libc.can_do_threads=0x00;
+
+	if (1 || libc.tls_size > sizeof builtin_tls) {
 #ifndef SYS_mmap2
 #define SYS_mmap2 SYS_mmap
 #endif
@@ -142,12 +251,115 @@ static void static_init_tls(size_t *aux)
 		 * so don't bloat the init code checking for error codes and
 		 * explicitly calling a_crash(). */
 	} else {
-		mem = builtin_tls;
+		mem = (unsigned char *)builtin_tls;
 	}
 
-	/* Failure to initialize thread pointer is always fatal. */
-	if (__init_tp(__copy_tls(mem)) < 0)
-		a_crash();
+{
+    unsigned long v = (unsigned long)(libc.tls_head);
+    write(1,  "h=0x", 4);
+    while (v != 0) {
+      char c = v % 16;
+      if (c <= 9) {
+        c = '0' + c;
+      } else {
+        c = 'a' + c - 10;
+      }
+      write(1, &c, 1);
+      v /= 16;
+    }
+    char c = '\n';
+    write(1, &c, 1);
+    }
+{
+    unsigned long v = (unsigned long)(libc.tls_size);
+    write(1,  "s=0x", 4);
+    while (v != 0) {
+      char c = v % 16;
+      if (c <= 9) {
+        c = '0' + c;
+      } else {
+        c = 'a' + c - 10;
+      }
+      write(1, &c, 1);
+      v /= 16;
+    }
+    char c = '\n';
+    write(1, &c, 1);
+    }
+
+{
+    unsigned long v = (unsigned long)(mem);
+    write(1,  "m=0x", 4);
+    while (v != 0) {
+      char c = v % 16;
+      if (c <= 9) {
+        c = '0' + c;
+      } else {
+        c = 'a' + c - 10;
+      }
+      write(1, &c, 1);
+      v /= 16;
+    }
+    char c = '\n';
+    write(1, &c, 1);
+    }
+
+	pthread_t td;
+	uintptr_t *dtv;
+
+	dtv = (uintptr_t *)mem;
+
+	// mem += libc.tls_size - sizeof(struct pthread);
+	// mem -= (uintptr_t)mem & (libc.tls_align-1);
+	td = (pthread_t)(mem + sizeof(uintptr_t));
+
+  write(1, "!0\n", 3);
+	dtv[0] = libc.tls_cnt;
+  write(1, "!1\n", 3);
+	td->dtv = dtv;
+  write(1, "!2\n", 3);
+
+  td->self = td;
+	int r = __set_thread_area(TP_ADJ(td));
+	// if (r < 0) return -1;
+	if (!r) libc.can_do_threads = 1;
+	td->detach_state = DT_JOINABLE;
+	td->tid = __syscall(SYS_set_tid_address, &__thread_list_lock);
+	td->locale = &libc.global_locale;
+	td->robust_list.head = &td->robust_list.head;
+	td->sysinfo = __sysinfo;
+	td->next = td->prev = td;
+
+	// pthread_t td;
+	// uintptr_t *dtv;
+	// dtv = (uintptr_t *)mem;
+
+	// mem += libc.tls_size - sizeof(struct pthread);
+	// mem -= (uintptr_t)mem & (libc.tls_align-1);
+	// td = (pthread_t)mem;
+
+  // write(1, "!0\n", 3);
+	// dtv[0] = libc.tls_cnt;
+  // write(1, "!1\n", 3);
+	// td->dtv = dtv;
+  // write(1, "!2\n", 3);
+	// td->self = td;
+	// if (__set_thread_area(TP_ADJ(p)) >= 0) {
+	// td->detach_state = DT_JOINABLE;
+	// td->tid = __syscall(SYS_set_tid_address, &__thread_list_lock);
+	// td->locale = &libc.global_locale;
+	// td->robust_list.head = &td->robust_list.head;
+	// td->sysinfo = __sysinfo;
+	// td->next = td->prev = td;
+  // }
+	// libc.can_do_threads = 0;
+
+
+	///* Failure to initialize thread pointer is always fatal. */
+	// if (__init_tp(td) < 0)
+	// 	a_crash();
+
+
 }
 
 weak_alias(static_init_tls, __init_tls);

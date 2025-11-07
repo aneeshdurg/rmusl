@@ -7,6 +7,7 @@
 #include "lock.h"
 #include "syscall.h"
 #include "fork_impl.h"
+#include "unistd.h"
 
 #define ALIGN 16
 
@@ -42,34 +43,42 @@ static void *__simple_malloc(size_t n)
 	size_t align=1;
 	void *p;
 
+  write(1, "m0\n", 3);
+
 	if (n > SIZE_MAX/2) {
 		errno = ENOMEM;
 		return 0;
 	}
 
+  write(1, "m1\n", 3);
 	if (!n) n++;
 	while (align<n && align<ALIGN)
 		align += align;
 
+  write(1, "m2\n", 3);
 	LOCK(lock);
 
+  write(1, "m3\n", 3);
 	cur += -cur & align-1;
 
-	if (n > end-cur) {
+  write(1, "m4\n", 3);
+	if (1 || n > end-cur) {
 		size_t req = n - (end-cur) + PAGE_SIZE-1 & -PAGE_SIZE;
 
-		if (!cur) {
+		if (0 && !cur) {
 			brk = __syscall(SYS_brk, 0);
 			brk += -brk & PAGE_SIZE-1;
 			cur = end = brk;
 		}
 
-		if (brk == end && req < SIZE_MAX-brk
+  write(1, "m5\n", 3);
+		if (0 && brk == end && req < SIZE_MAX-brk
 		    && !traverses_stack_p(brk, brk+req)
 		    && __syscall(SYS_brk, brk+req)==brk+req) {
 			brk = end += req;
 		} else {
-			int new_area = 0;
+  write(1, "m6\n", 3);
+			int new_area = 1;
 			req = n + PAGE_SIZE-1 & -PAGE_SIZE;
 			/* Only make a new area rather than individual mmap
 			 * if wasted space would be over 1/8 of the map. */
@@ -86,20 +95,26 @@ static void *__simple_malloc(size_t n)
 					new_area = 1;
 				}
 			}
+  write(1, "m7\n", 3);
 			void *mem = __mmap(0, req, PROT_READ|PROT_WRITE,
 				MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+  write(1, "m8\n", 3);
 			if (mem == MAP_FAILED || !new_area) {
+    write(1, "m9\n", 3);
 				UNLOCK(lock);
 				return mem==MAP_FAILED ? 0 : mem;
 			}
+    write(1, "m10\n", 4);
 			cur = (uintptr_t)mem;
 			end = cur + req;
 		}
 	}
 
+    write(1, "m11\n", 4);
 	p = (void *)cur;
 	cur += n;
 	UNLOCK(lock);
+    write(1, "m12\n", 4);
 	return p;
 }
 
