@@ -56,4 +56,5 @@ extern hidden const char __libc_version[];
 hidden void __synccall(void (*)(void *), void *);
 hidden int __setxid(int, int, int, int);
 
+void libc_fixup(void *offset, char **envp);
 #endif

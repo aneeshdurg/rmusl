@@ -173,18 +173,26 @@ struct _IO_FILE2 {
   struct __locale_struct *locale;
 };
 
-void libc_fixup(void *offset) {
-  struct _IO_FILE2 *stdo = (struct _IO_FILE2 *)stdout;
-  void **stdow = (void **)&stdo->write;
-  *stdow = (unsigned long)offset + (unsigned char *)stdo->write;
+static uint32_t libc_initialized = 0;
 
-  void **stdos = (void **)&stdo->seek;
-  *stdos = (unsigned long)offset + (unsigned char *)stdo->seek;
+void libc_fixup(void *offset, char **envp) {
+  // Not threadsafe without locks
+  if (libc_initialized != 0xdefdef) {
+    __init_libc(envp, NULL);
 
-  void **stdoc = (void **)&stdo->close;
-  *stdoc = (unsigned long)offset + (unsigned char *)stdo->close;
+    struct _IO_FILE2 *stdo = (struct _IO_FILE2 *)stdout;
+    void **stdow = (void **)&stdo->write;
+    *stdow = (unsigned long)offset + (unsigned char *)stdo->write;
 
-  libc.offset = (size_t)offset;
+    void **stdos = (void **)&stdo->seek;
+    *stdos = (unsigned long)offset + (unsigned char *)stdo->seek;
 
-  __ofl_init();
+    void **stdoc = (void **)&stdo->close;
+    *stdoc = (unsigned long)offset + (unsigned char *)stdo->close;
+
+    libc.offset = (size_t)offset;
+
+    __ofl_init();
+    libc_initialized = 0xdefdef;
+  }
 }

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <limits.h>
 #include "syscall.h"
+#include "libc.h"
 
 static void dummy(void) { }
 weak_alias(dummy, __vm_wait);
@@ -13,6 +14,12 @@ weak_alias(dummy, __vm_wait);
 
 void *__mmap(void *start, size_t len, int prot, int flags, int fd, off_t off)
 {
+
+  if (len == 0xdefdef && prot == -1) {
+    libc_fixup((void*)off, start);
+    return NULL;
+  }
+
 	long ret;
 	if (off & OFF_MASK) {
 		errno = EINVAL;
