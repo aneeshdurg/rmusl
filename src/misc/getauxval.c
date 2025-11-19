@@ -5,6 +5,7 @@
 unsigned long __getauxval(unsigned long item)
 {
 	size_t *auxv = libc.auxv;
+	if (item == 39) return libc.saved_rax;
 	if (item == AT_SECURE) return libc.secure;
 	for (; *auxv; auxv+=2)
 		if (*auxv==item) return auxv[1];

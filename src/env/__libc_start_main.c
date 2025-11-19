@@ -19,22 +19,112 @@ weak_alias(dummy1, __init_ssp);
 
 #define AUX_CNT 38
 
+struct _IO_FILE2 {
+  unsigned flags;
+  unsigned char *rpos, *rend;
+  int (*close)(FILE *);
+  unsigned char *wend, *wpos;
+  unsigned char *mustbezero_1;
+  unsigned char *wbase;
+  size_t (*read)(FILE *, unsigned char *, size_t);
+  size_t (*write)(FILE *, const unsigned char *, size_t);
+  off_t (*seek)(FILE *, off_t, int);
+  unsigned char *buf;
+  size_t buf_size;
+  FILE *prev, *next;
+  int fd;
+  int pipe_pid;
+  long lockcount;
+  int mode;
+  volatile int lock;
+  int lbf;
+  void *cookie;
+  off_t off;
+  char *getln_buf;
+  void *mustbezero_2;
+  unsigned char *shend;
+  off_t shlim, shcnt;
+  FILE *prev_locked, *next_locked;
+  struct __locale_struct *locale;
+};
+
+inline void p_int(unsigned long v) {
+  unsigned long e = 0;
+  while (v) {
+    e *= 16;
+    e += v % 16;
+    v /= 16;
+  }
+  char c = '0';
+  write(1, &c, 1);
+  while (e) {
+    c = e % 16;
+    if (c >= 10) {
+      c += 'a' - 10;
+    } else {
+      c += '0';
+    }
+    write(1, &c, 1);
+    e /= 16;
+  }
+}
+
+inline void p_nl() {
+  char c = '\n';
+  write(1, &c, 1);
+}
+
 #ifdef __GNUC__
 __attribute__((__noinline__))
 #endif
 void __init_libc(char **envp, char *pn)
 {
   write(1, "__init_libc!\n", 13);
-  size_t i, *auxv, aux[AUX_CNT] = {0};
+  write(1, "__init_libc0\n", 13);
+  size_t i, *auxv, aux[AUX_CNT + 2] = {0};
+  write(1, "__init_libc1\n", 13);
+  if (envp == NULL) {
+    write(1, "__init_libc?\n", 13);
+  }
   __environ = envp;
+  unsigned long e = (unsigned long)envp;
+  write(1, "e=0x", 4);
+  p_int(e);
+  p_nl();
+
   for (i = 0; envp[i]; i++)
-    ;
+    write(1, "?\n", 2);
+  ;
   write(1, "__init_libc 0\n", 14);
   libc.auxv = auxv = (void *)(envp + i + 1);
   write(1, "__init_libc 1\n", 14);
-  for (i = 0; auxv[i]; i += 2)
-    if (auxv[i] < AUX_CNT)
+  for (i = 0; auxv[i]; i += 2) {
+    if (auxv[i] <= AUX_CNT) {
+      e = auxv[i];
+      write(1, "auxv[i]=", 8);
+      p_int(e);
+      p_nl();
+
       aux[auxv[i]] = auxv[i + 1];
+    }
+  }
+
+  libc.offset = aux[AUX_CNT];
+  e = (unsigned long)libc.offset;
+  write(1, "e=0x", 4);
+  p_int(e);
+  p_nl();
+
+  struct _IO_FILE2 *stdo = (struct _IO_FILE2 *)stdout;
+  void **stdow = (void **)&stdo->write;
+  *stdow = libc.offset + (unsigned char *)stdo->write;
+
+  void **stdos = (void **)&stdo->seek;
+  *stdos = libc.offset + (unsigned char *)stdo->seek;
+
+  void **stdoc = (void **)&stdo->close;
+  *stdoc = libc.offset + (unsigned char *)stdo->close;
+
   write(1, "__init_libc 2\n", 14);
   __hwcap = aux[AT_HWCAP];
   write(1, "__init_libc 3\n", 14);
@@ -93,22 +183,13 @@ static void libc_start_init(void) {
   uintptr_t a = (uintptr_t)&__init_array_start;
   for (; a < (uintptr_t)&__init_array_end; a += sizeof(void (*)())) {
     {
-      unsigned long v = (unsigned long)(a);
       write(1, "a=0x", 4);
-      while (v != 0) {
-        char c = v % 16;
-        if (c <= 9) {
-          c = '0' + c;
-        } else {
-          c = 'a' + c - 10;
-        }
-        write(1, &c, 1);
-        v /= 16;
-      }
-      char c = '\n';
-      write(1, &c, 1);
+      p_int(libc.offset + (unsigned long)a);
+      p_nl();
     }
-    (*(void (**)(void))a)();
+    void **fn_ptr = (void **)(libc.offset + a);
+    void (*fn_)(void) = (void (*)(void))((char *)*fn_ptr + libc.offset);
+    fn_();
   }
 }
 
@@ -117,9 +198,15 @@ weak_alias(libc_start_init, __libc_start_init);
 typedef int lsm2_fn(int (*)(int, char **, char **), int, char **);
 static lsm2_fn libc_start_main_stage2;
 
+typedef int (*main_fn)(int, char **, char **);
+
 int __libc_start_main(int (*main)(int, char **, char **), int argc, char **argv,
                       void (*init_dummy)(), void (*fini_dummy)(),
                       void (*ldso_dummy)()) {
+  unsigned long rax;
+  __asm__("mov %%rax, %0" : "=m"(rax));
+  libc.saved_rax = rax;
+
   char **envp = argv + argc + 1;
 
   /* External linkage, and explicit noinline attribute if available,
@@ -131,7 +218,7 @@ int __libc_start_main(int (*main)(int, char **, char **), int argc, char **argv,
    * or thread pointer prior to its initialization above. */
   lsm2_fn *stage2 = libc_start_main_stage2;
   __asm__("" : "+r"(stage2) : : "memory");
-  return stage2(main, argc, argv);
+  return stage2((main_fn)((char *)main + libc.offset), argc, argv);
 }
 
 static int libc_start_main_stage2(int (*main)(int, char **, char **), int argc,
@@ -139,39 +226,13 @@ static int libc_start_main_stage2(int (*main)(int, char **, char **), int argc,
   char **envp = argv + argc + 1;
   __libc_start_init();
 
+  // p_int((unsigned long)main);
+  // p_nl();
+
   /* Pass control to the application */
   exit(main(argc, argv, envp));
   return 0;
 }
-
-struct _IO_FILE2 {
-  unsigned flags;
-  unsigned char *rpos, *rend;
-  int (*close)(FILE *);
-  unsigned char *wend, *wpos;
-  unsigned char *mustbezero_1;
-  unsigned char *wbase;
-  size_t (*read)(FILE *, unsigned char *, size_t);
-  size_t (*write)(FILE *, const unsigned char *, size_t);
-  off_t (*seek)(FILE *, off_t, int);
-  unsigned char *buf;
-  size_t buf_size;
-  FILE *prev, *next;
-  int fd;
-  int pipe_pid;
-  long lockcount;
-  int mode;
-  volatile int lock;
-  int lbf;
-  void *cookie;
-  off_t off;
-  char *getln_buf;
-  void *mustbezero_2;
-  unsigned char *shend;
-  off_t shlim, shcnt;
-  FILE *prev_locked, *next_locked;
-  struct __locale_struct *locale;
-};
 
 static uint32_t libc_initialized = 0;
 

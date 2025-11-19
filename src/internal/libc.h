@@ -29,6 +29,7 @@ struct __libc {
 	size_t page_size;
 	struct __locale_struct global_locale;
   size_t offset;
+  unsigned long saved_rax;
 };
 
 #ifndef PAGE_SIZE
