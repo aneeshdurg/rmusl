@@ -48,72 +48,25 @@ struct _IO_FILE2 {
   struct __locale_struct *locale;
 };
 
-inline void p_int(unsigned long v) {
-  unsigned long e = 0;
-  while (v) {
-    e *= 16;
-    e += v % 16;
-    v /= 16;
-  }
-  char c = '0';
-  write(1, &c, 1);
-  while (e) {
-    c = e % 16;
-    if (c >= 10) {
-      c += 'a' - 10;
-    } else {
-      c += '0';
-    }
-    write(1, &c, 1);
-    e /= 16;
-  }
-}
-
-inline void p_nl() {
-  char c = '\n';
-  write(1, &c, 1);
-}
-
 #ifdef __GNUC__
 __attribute__((__noinline__))
 #endif
 void __init_libc(char **envp, char *pn)
 {
-  write(1, "__init_libc!\n", 13);
-  write(1, "__init_libc0\n", 13);
   size_t i, *auxv, aux[AUX_CNT + 2] = {0};
-  write(1, "__init_libc1\n", 13);
-  if (envp == NULL) {
-    write(1, "__init_libc?\n", 13);
-  }
   __environ = envp;
-  unsigned long e = (unsigned long)envp;
-  write(1, "e=0x", 4);
-  p_int(e);
-  p_nl();
 
   for (i = 0; envp[i]; i++)
-    write(1, "?\n", 2);
-  ;
-  write(1, "__init_libc 0\n", 14);
+    ;
   libc.auxv = auxv = (void *)(envp + i + 1);
-  write(1, "__init_libc 1\n", 14);
   for (i = 0; auxv[i]; i += 2) {
     if (auxv[i] <= AUX_CNT) {
-      e = auxv[i];
-      write(1, "auxv[i]=", 8);
-      p_int(e);
-      p_nl();
 
       aux[auxv[i]] = auxv[i + 1];
     }
   }
 
   libc.offset = aux[AUX_CNT];
-  e = (unsigned long)libc.offset;
-  write(1, "e=0x", 4);
-  p_int(e);
-  p_nl();
 
   struct _IO_FILE2 *stdo = (struct _IO_FILE2 *)stdout;
   void **stdow = (void **)&stdo->write;
@@ -125,14 +78,10 @@ void __init_libc(char **envp, char *pn)
   void **stdoc = (void **)&stdo->close;
   *stdoc = libc.offset + (unsigned char *)stdo->close;
 
-  write(1, "__init_libc 2\n", 14);
   __hwcap = aux[AT_HWCAP];
-  write(1, "__init_libc 3\n", 14);
   if (aux[AT_SYSINFO])
     __sysinfo = aux[AT_SYSINFO];
-  write(1, "__init_libc 4\n", 14);
   libc.page_size = aux[AT_PAGESZ];
-  write(1, "__init_libc 5\n", 14);
 
   if (!pn)
     pn = (void *)aux[AT_EXECFN];
@@ -142,32 +91,24 @@ void __init_libc(char **envp, char *pn)
   for (i = 0; pn[i]; i++)
     if (pn[i] == '/')
       __progname = pn + i + 1;
-  write(1, "__init_libc 6\n", 14);
 
   __init_tls(aux);
-  write(1, "__init_libc 7\n", 14);
   __init_ssp((void *)aux[AT_RANDOM]);
-  write(1, "__init_libc 8\n", 14);
 
   if (aux[AT_UID] == aux[AT_EUID] && aux[AT_GID] == aux[AT_EGID] &&
       !aux[AT_SECURE]) {
-    write(1, "__init_libc 8\n", 14);
     return;
   }
-  write(1, "__init_libc 9\n", 14);
 
   struct pollfd pfd[3] = {{.fd = 0}, {.fd = 1}, {.fd = 2}};
   int r =
 #ifdef SYS_poll
-      write(1, "__init_libc 10\n", 14);
-  __syscall(SYS_poll, pfd, 3, 0);
+      __syscall(SYS_poll, pfd, 3, 0);
 #else
       __syscall(SYS_ppoll, pfd, 3, &(struct timespec){0}, 0, _NSIG / 8);
 #endif
-  write(1, "__init_libc 11\n", 14);
   if (r < 0)
     a_crash();
-  write(1, "__init_libc 12\n", 14);
   for (i = 0; i < 3; i++)
     if (pfd[i].revents & POLLNVAL)
       if (__sys_open("/dev/null", O_RDWR) < 0)
@@ -178,15 +119,9 @@ void __init_libc(char **envp, char *pn)
 }
 
 static void libc_start_init(void) {
-  write(1, "_init\n", 6);
   _init();
   uintptr_t a = (uintptr_t)&__init_array_start;
   for (; a < (uintptr_t)&__init_array_end; a += sizeof(void (*)())) {
-    {
-      write(1, "a=0x", 4);
-      p_int(libc.offset + (unsigned long)a);
-      p_nl();
-    }
     void **fn_ptr = (void **)(libc.offset + a);
     void (*fn_)(void) = (void (*)(void))((char *)*fn_ptr + libc.offset);
     fn_();
@@ -225,9 +160,6 @@ static int libc_start_main_stage2(int (*main)(int, char **, char **), int argc,
                                   char **argv) {
   char **envp = argv + argc + 1;
   __libc_start_init();
-
-  // p_int((unsigned long)main);
-  // p_nl();
 
   /* Pass control to the application */
   exit(main(argc, argv, envp));

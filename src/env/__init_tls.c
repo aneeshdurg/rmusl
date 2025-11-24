@@ -65,113 +65,11 @@ void *__copy_tls(unsigned char *mem)
 	for (i=1, p=libc.tls_head; p; i++, p=p->next) {
 		dtv[i] = (uintptr_t)(mem - p->offset) + DTP_OFFSET;
 
-  {
-    unsigned long v = (unsigned long)(p->offset);
-    write(1,  "o=0x", 4);
-    while (v != 0) {
-      char c = v % 16;
-      if (c <= 9) {
-        c = '0' + c;
-      } else {
-        c = 'a' + c - 10;
-      }
-      write(1, &c, 1);
-      v /= 16;
-    }
-    char c = '\n';
-    write(1, &c, 1);
-    }
-
-{
-    unsigned long v = (unsigned long)(p->size);
-    write(1,  "z=0x", 4);
-    while (v != 0) {
-      char c = v % 16;
-      if (c <= 9) {
-        c = '0' + c;
-      } else {
-        c = 'a' + c - 10;
-      }
-      write(1, &c, 1);
-      v /= 16;
-    }
-    char c = '\n';
-    write(1, &c, 1);
-    }
-
 		memcpy(mem - p->offset, p->image, p->len);
 	}
 #endif
-{
-    unsigned long v = (unsigned long)(dtv);
-    write(1,  "d=0x", 4);
-    while (v != 0) {
-      char c = v % 16;
-      if (c <= 9) {
-        c = '0' + c;
-      } else {
-        c = 'a' + c - 10;
-      }
-      write(1, &c, 1);
-      v /= 16;
-    }
-    char c = '\n';
-    write(1, &c, 1);
-    }
-{
-    unsigned long v = (unsigned long)(&libc);
-    write(1,  "l=0x", 4);
-    while (v != 0) {
-      char c = v % 16;
-      if (c <= 9) {
-        c = '0' + c;
-      } else {
-        c = 'a' + c - 10;
-      }
-      write(1, &c, 1);
-      v /= 16;
-    }
-    char c = '\n';
-    write(1, &c, 1);
-    }
-{
-    unsigned long v = (unsigned long)(td);
-    write(1,  "t=0x", 4);
-    while (v != 0) {
-      char c = v % 16;
-      if (c <= 9) {
-        c = '0' + c;
-      } else {
-        c = 'a' + c - 10;
-      }
-      write(1, &c, 1);
-      v /= 16;
-    }
-    char c = '\n';
-    write(1, &c, 1);
-    }
-{
-    unsigned long v = (unsigned long)(&td->dtv);
-    write(1,  "d=0x", 4);
-    while (v != 0) {
-      char c = v % 16;
-      if (c <= 9) {
-        c = '0' + c;
-      } else {
-        c = 'a' + c - 10;
-      }
-      write(1, &c, 1);
-      v /= 16;
-    }
-    char c = '\n';
-    write(1, &c, 1);
-    }
-
-write(1, "!0\n", 3);
 	dtv[0] = libc.tls_cnt;
-write(1, "!1\n", 3);
 	td->dtv = dtv;
-write(1, "!2\n", 3);
 	return td;
 }
 
@@ -254,56 +152,6 @@ static void static_init_tls(size_t *aux)
 		mem = (unsigned char *)builtin_tls;
 	}
 
-{
-    unsigned long v = (unsigned long)(libc.tls_head);
-    write(1,  "h=0x", 4);
-    while (v != 0) {
-      char c = v % 16;
-      if (c <= 9) {
-        c = '0' + c;
-      } else {
-        c = 'a' + c - 10;
-      }
-      write(1, &c, 1);
-      v /= 16;
-    }
-    char c = '\n';
-    write(1, &c, 1);
-    }
-{
-    unsigned long v = (unsigned long)(libc.tls_size);
-    write(1,  "s=0x", 4);
-    while (v != 0) {
-      char c = v % 16;
-      if (c <= 9) {
-        c = '0' + c;
-      } else {
-        c = 'a' + c - 10;
-      }
-      write(1, &c, 1);
-      v /= 16;
-    }
-    char c = '\n';
-    write(1, &c, 1);
-    }
-
-{
-    unsigned long v = (unsigned long)(mem);
-    write(1,  "m=0x", 4);
-    while (v != 0) {
-      char c = v % 16;
-      if (c <= 9) {
-        c = '0' + c;
-      } else {
-        c = 'a' + c - 10;
-      }
-      write(1, &c, 1);
-      v /= 16;
-    }
-    char c = '\n';
-    write(1, &c, 1);
-    }
-
 	pthread_t td;
 	uintptr_t *dtv;
 
@@ -313,11 +161,8 @@ static void static_init_tls(size_t *aux)
 	// mem -= (uintptr_t)mem & (libc.tls_align-1);
 	td = (pthread_t)(mem + sizeof(uintptr_t));
 
-  write(1, "!0\n", 3);
 	dtv[0] = libc.tls_cnt;
-  write(1, "!1\n", 3);
 	td->dtv = dtv;
-  write(1, "!2\n", 3);
 
   td->self = td;
 	int r = __set_thread_area(TP_ADJ(td));
